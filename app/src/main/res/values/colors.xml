@@ -1,10 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- Primary theme colors -->
+    <color name="primary">#FF2B4B70</color>
+    <color name="primary_variant">#FF123456</color>
+    <color name="on_primary">#FFFFFFFF</color>
+    
+    <!-- Secondary theme colors -->
+    <color name="secondary">#FF6200EE</color>
+    <color name="secondary_variant">#FF4B01D0</color>
+    <color name="on_secondary">#FFFFFFFF</color>
+    
+    <!-- Background colors -->
+    <color name="background">#FF0A1929</color>
+    <color name="surface">#FF121212</color>
+    <color name="on_background">#FFFFFFFF</color>
+    <color name="on_surface">#FFFFFFFF</color>
+    
+    <!-- Priority colors -->
+    <color name="priority_high">#FFFF5252</color>
+    <color name="priority_medium">#FFFFAB40</color>
+    <color name="priority_low">#FF4CAF50</color>
+    
+    <!-- Other UI colors -->
+    <color name="error">#FFCF6679</color>
+    <color name="on_error">#FF000000</color>
+    <color name="completed">#FF4CAF50</color>
+    <color name="pending">#FF3F51B5</color>
+    <color name="due">#FFFF5252</color>
+    <color name="card_background">#FF1E1E1E</color>
+    <color name="divider">#33FFFFFF</color>
 </resources>

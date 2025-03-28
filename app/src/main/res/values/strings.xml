@@ -1,3 +1,87 @@
 <resources>
-    <string name="app_name">My Application</string>
+    <string name="app_name">StudyMate</string>
+    
+    <!-- Navigation Labels -->
+    <string name="nav_home">Home</string>
+    <string name="nav_tasks">Tasks</string>
+    <string name="nav_timer">Timer</string>
+    <string name="nav_stats">Stats</string>
+    <string name="nav_settings">Settings</string>
+    
+    <!-- Task related -->
+    <string name="task_add">Add Task</string>
+    <string name="task_edit">Edit Task</string>
+    <string name="task_delete">Delete Task</string>
+    <string name="task_name">Task Name</string>
+    <string name="task_description">Description</string>
+    <string name="task_deadline">Deadline</string>
+    <string name="task_priority">Priority</string>
+    <string name="task_priority_high">High</string>
+    <string name="task_priority_medium">Medium</string>
+    <string name="task_priority_low">Low</string>
+    <string name="task_repeat">Repeat</string>
+    <string name="task_subject">Subject</string>
+    <string name="task_pending">Pending</string>
+    <string name="task_completed">Completed</string>
+    <string name="task_due">Due</string>
+    <string name="task_no_tasks">No tasks found</string>
+    <string name="task_today">Today</string>
+    <string name="task_tomorrow">Tomorrow</string>
+    <string name="task_repeat_daily">Daily</string>
+    <string name="task_repeat_weekly">Weekly</string>
+    <string name="task_repeat_custom">Custom</string>
+    <string name="task_reminder">Set Reminder</string>
+    
+    <!-- Subject related -->
+    <string name="subject_add">Add Subject</string>
+    <string name="subject_edit">Edit Subject</string>
+    <string name="subject_delete">Delete Subject</string>
+    <string name="subject_name">Subject Name</string>
+    <string name="subject_no_subjects">No subjects found</string>
+    
+    <!-- Timer related -->
+    <string name="timer_study">Study Timer</string>
+    <string name="timer_break">Break Timer</string>
+    <string name="timer_start">Start</string>
+    <string name="timer_pause">Pause</string>
+    <string name="timer_resume">Resume</string>
+    <string name="timer_reset">Reset</string>
+    <string name="timer_minutes">minutes</string>
+    <string name="timer_notification_title">Timer Finished</string>
+    <string name="timer_notification_study_message">Study session completed!</string>
+    <string name="timer_notification_break_message">Break time is over!</string>
+    <string name="timer_running">Timer is running</string>
+    <string name="timer_select_subject">Select Subject</string>
+    
+    <!-- Statistics -->
+    <string name="stats_weekly">Weekly Stats</string>
+    <string name="stats_monthly">Monthly Stats</string>
+    <string name="stats_study_time">Study Time</string>
+    <string name="stats_tasks_completed">Tasks Completed</string>
+    <string name="stats_hours">hours</string>
+    <string name="stats_minutes">min</string>
+    <string name="stats_no_data">No data available</string>
+    
+    <!-- Settings -->
+    <string name="settings_theme">Dark Theme</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_task_reminders">Task Reminders</string>
+    <string name="settings_timer_notifications">Timer Notifications</string>
+    <string name="settings_study_duration">Default Study Duration</string>
+    <string name="settings_break_duration">Default Break Duration</string>
+    
+    <!-- Common -->
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="confirm">Confirm</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="select_days">Select Days</string>
+    <string name="monday">Monday</string>
+    <string name="tuesday">Tuesday</string>
+    <string name="wednesday">Wednesday</string>
+    <string name="thursday">Thursday</string>
+    <string name="friday">Friday</string>
+    <string name="saturday">Saturday</string>
+    <string name="sunday">Sunday</string>
 </resources>
