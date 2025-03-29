@@ -179,14 +179,15 @@ fun TimerScreen() {
                         )
                         
                         Button(
-                            onClick = { showSubjectDropdown = true }
+                            onClick = { showSubjectDropdown = true },
+                            enabled = !isRunning
                         ) {
                             Text("Change")
                         }
                     }
                     
                     DropdownMenu(
-                        expanded = showSubjectDropdown,
+                        expanded = showSubjectDropdown && !isRunning,
                         onDismissRequest = { showSubjectDropdown = false }
                     ) {
                         listOf("Mathematics", "History", "Physics", "Economics", "English").forEach { subject ->

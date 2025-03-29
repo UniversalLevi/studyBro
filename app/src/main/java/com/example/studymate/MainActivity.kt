@@ -33,6 +33,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.studymate.ui.navigation.NavigationGraph
 import com.example.studymate.ui.navigation.NavigationItem
 import com.example.studymate.ui.navigation.Screen
 import com.example.studymate.ui.screens.home.HomeScreen
@@ -74,6 +75,18 @@ fun MainScreen() {
     
     var bottomBarVisible by rememberSaveable { mutableStateOf(true) }
     
+    // Track current route for hiding bottom bar on detail screens
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    
+    // Hide bottom bar on detail screens
+    bottomBarVisible = when {
+        currentRoute == null -> true
+        currentRoute.startsWith("taskDetail/") -> false
+        currentRoute == "addTask" -> false
+        else -> true
+    }
+    
     Scaffold(
         bottomBar = {
             AnimatedVisibility(
@@ -82,7 +95,6 @@ fun MainScreen() {
                 exit = slideOutVertically(targetOffsetY = { it })
             ) {
                 NavigationBar {
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentDestination = navBackStackEntry?.destination
                     
                     navItems.forEach { item ->
@@ -105,39 +117,12 @@ fun MainScreen() {
             }
         }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Home.route,
-            modifier = Modifier.padding(innerPadding)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
-            composable(Screen.Home.route) {
-                HomeScreen(
-                    navigateToTask = { taskId ->
-                        navController.navigate("${Screen.TaskDetail.route}/$taskId")
-                    }
-                )
-            }
-            composable(Screen.Tasks.route) {
-                TasksScreen(
-                    navigateToTaskDetail = { taskId ->
-                        navController.navigate("${Screen.TaskDetail.route}/$taskId")
-                    },
-                    navigateToAddTask = {
-                        navController.navigate(Screen.AddTask.route)
-                    }
-                )
-            }
-            composable(Screen.Timer.route) {
-                TimerScreen()
-            }
-            composable(Screen.Statistics.route) {
-                StatisticsScreen()
-            }
-            composable(Screen.Settings.route) {
-                SettingsScreen()
-            }
-            // Additional routes for task details, add task, etc.
-            // will be added in the future
+            NavigationGraph(navController = navController)
         }
     }
 }

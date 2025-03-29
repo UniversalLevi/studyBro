@@ -9,7 +9,11 @@ sealed class Screen(val route: String) {
     object Timer : Screen("timer")
     object Statistics : Screen("statistics")
     object Settings : Screen("settings")
-    object TaskDetail : Screen("task_detail")
-    object AddTask : Screen("add_task")
-    object AddSubject : Screen("add_subject")
+    object Calendar : Screen("calendar")
+    object Profile : Screen("profile")
+    object Schedule : Screen("schedule")
+    
+    // These routes are used for destinations without bottom navigation
+    object TaskDetail : Screen("taskDetail")  // Used as base for "taskDetail/{id}"
+    object AddTask : Screen("addTask")
 } 

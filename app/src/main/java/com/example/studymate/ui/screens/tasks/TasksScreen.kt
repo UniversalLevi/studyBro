@@ -22,13 +22,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -55,8 +52,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.studymate.data.model.Priority
-import com.example.studymate.data.model.TaskStatus
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -76,65 +71,31 @@ enum class TaskPriority {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TasksScreen(navigateToTaskDetail: (Long) -> Unit, navigateToAddTask: () -> Unit) {
+fun TasksScreen(
+    tasks: List<TaskItem>,
+    navigateToTaskDetail: (Long) -> Unit, 
+    navigateToAddTask: () -> Unit,
+    onTaskStatusChange: (Long, Boolean) -> Unit,
+    onTaskDelete: (Long) -> Unit
+) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabTitles = listOf("All", "Pending", "Completed")
-    var showFilterMenu by remember { mutableStateOf(false) }
-    
-    val sampleTasks = getSampleTasks()
     
     var filteredTasks by remember {
-        mutableStateOf(sampleTasks)
+        mutableStateOf(
+            when (selectedTabIndex) {
+                0 -> tasks
+                1 -> tasks.filter { !it.isCompleted }
+                2 -> tasks.filter { it.isCompleted }
+                else -> tasks
+            }
+        )
     }
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tasks") },
-                actions = {
-                    IconButton(onClick = { /* TODO: Implement search */ }) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search Tasks"
-                        )
-                    }
-                    
-                    Box {
-                        IconButton(onClick = { showFilterMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Default.FilterList,
-                                contentDescription = "Filter Tasks"
-                            )
-                        }
-                        
-                        DropdownMenu(
-                            expanded = showFilterMenu,
-                            onDismissRequest = { showFilterMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Sort by Deadline") },
-                                onClick = { 
-                                    /* TODO: Implement sorting */ 
-                                    showFilterMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Sort by Priority") },
-                                onClick = { 
-                                    /* TODO: Implement sorting */ 
-                                    showFilterMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Filter by Subject") },
-                                onClick = { 
-                                    /* TODO: Implement filtering */ 
-                                    showFilterMenu = false
-                                }
-                            )
-                        }
-                    }
-                }
+                title = { Text("Tasks") }
             )
         },
         floatingActionButton = {
@@ -161,10 +122,10 @@ fun TasksScreen(navigateToTaskDetail: (Long) -> Unit, navigateToAddTask: () -> U
                         onClick = {
                             selectedTabIndex = index
                             filteredTasks = when (index) {
-                                0 -> sampleTasks
-                                1 -> sampleTasks.filter { !it.isCompleted }
-                                2 -> sampleTasks.filter { it.isCompleted }
-                                else -> sampleTasks
+                                0 -> tasks
+                                1 -> tasks.filter { !it.isCompleted }
+                                2 -> tasks.filter { it.isCompleted }
+                                else -> tasks
                             }
                         },
                         text = { Text(title) }
@@ -174,9 +135,9 @@ fun TasksScreen(navigateToTaskDetail: (Long) -> Unit, navigateToAddTask: () -> U
             
             TaskList(
                 tasks = filteredTasks,
-                onCheckboxClick = { id, checked -> /* Will connect to ViewModel */ },
-                onTaskClick = { /* Handle task click */ },
-                onDeleteClick = { /* Handle delete */ }
+                onTaskStatusChange = onTaskStatusChange,
+                onTaskClick = navigateToTaskDetail,
+                onTaskDelete = onTaskDelete
             )
         }
     }
@@ -185,9 +146,9 @@ fun TasksScreen(navigateToTaskDetail: (Long) -> Unit, navigateToAddTask: () -> U
 @Composable
 fun TaskList(
     tasks: List<TaskItem>,
-    onCheckboxClick: (Long, Boolean) -> Unit,
+    onTaskStatusChange: (Long, Boolean) -> Unit,
     onTaskClick: (Long) -> Unit,
-    onDeleteClick: (Long) -> Unit
+    onTaskDelete: (Long) -> Unit
 ) {
     if (tasks.isEmpty()) {
         EmptyTasksMessage()
@@ -200,9 +161,9 @@ fun TaskList(
             items(tasks) { task ->
                 TaskListItem(
                     task = task,
-                    onCheckboxClick = { isChecked -> onCheckboxClick(task.id, isChecked) },
+                    onStatusChange = { isCompleted -> onTaskStatusChange(task.id, isCompleted) },
                     onTaskClick = { onTaskClick(task.id) },
-                    onDeleteClick = { onDeleteClick(task.id) }
+                    onDeleteClick = { onTaskDelete(task.id) }
                 )
             }
         }
@@ -250,7 +211,7 @@ fun EmptyTasksMessage() {
 @Composable
 fun TaskListItem(
     task: TaskItem,
-    onCheckboxClick: (Boolean) -> Unit,
+    onStatusChange: (Boolean) -> Unit,
     onTaskClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
@@ -275,10 +236,7 @@ fun TaskListItem(
         ) {
             Checkbox(
                 checked = task.isCompleted,
-                onCheckedChange = { 
-                    // Will be connected to ViewModel in future
-                },
-                modifier = Modifier.align(Alignment.CenterVertically)
+                onCheckedChange = { onStatusChange(it) }
             )
             
             Spacer(modifier = Modifier.width(8.dp))
@@ -350,71 +308,35 @@ fun TaskListItem(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f * textAlpha)
                 )
                 
-                IconButton(
-                    onClick = { /* TODO: Implement delete */ },
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete Task",
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
+                // Show undo or delete button based on task status
+                if (isCompleted) {
+                    IconButton(
+                        onClick = { onStatusChange(false) },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Undo,
+                            contentDescription = "Undo Task Completion",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                } else {
+                    IconButton(
+                        onClick = onDeleteClick,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Task",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }
     }
-}
-
-// Sample data for testing
-fun getSampleTasks(): List<TaskItem> {
-    return listOf(
-        TaskItem(
-            id = 1,
-            title = "Complete Math Assignment",
-            subject = "Mathematics",
-            subjectColor = Color(0xFF4285F4),
-            deadline = LocalDate.now().plusDays(1),
-            priority = TaskPriority.HIGH,
-            isCompleted = false
-        ),
-        TaskItem(
-            id = 2,
-            title = "Read History Chapter 5",
-            subject = "History",
-            subjectColor = Color(0xFFEA4335),
-            deadline = LocalDate.now().plusDays(3),
-            priority = TaskPriority.MEDIUM,
-            isCompleted = true
-        ),
-        TaskItem(
-            id = 3,
-            title = "Prepare Physics Lab Report",
-            subject = "Physics",
-            subjectColor = Color(0xFFFBBC05),
-            deadline = LocalDate.now().plusDays(2),
-            priority = TaskPriority.HIGH,
-            isCompleted = false
-        ),
-        TaskItem(
-            id = 4,
-            title = "Review English Notes",
-            subject = "English",
-            subjectColor = Color(0xFF34A853),
-            deadline = LocalDate.now().plusDays(5),
-            priority = TaskPriority.LOW,
-            isCompleted = false
-        ),
-        TaskItem(
-            id = 5,
-            title = "Complete Economics Project",
-            subject = "Economics",
-            subjectColor = Color(0xFF9C27B0),
-            deadline = LocalDate.now().plusDays(7),
-            priority = TaskPriority.MEDIUM,
-            isCompleted = false
-        )
-    )
 }
 
 private fun formatDeadline(date: LocalDate?): String {
