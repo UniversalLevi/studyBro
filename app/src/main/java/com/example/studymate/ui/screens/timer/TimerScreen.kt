@@ -83,7 +83,8 @@ import kotlin.math.sin
 fun TimerScreen(
     viewModel: TimerViewModel = viewModel(),
     subjects: List<String> = emptyList(),
-    onSubjectSelected: (String) -> Unit = {}
+    onSubjectSelected: (String) -> Unit = {},
+    subjectIds: Map<String, Long> = emptyMap()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -156,13 +157,26 @@ fun TimerScreen(
     var selectedSubject by remember { mutableStateOf(if (subjects.isNotEmpty()) subjects.first() else "") }
     var showSubjectDropdown by remember { mutableStateOf(false) }
     
+    // Update subject ID in ViewModel when subject changes
+    LaunchedEffect(selectedSubject) {
+        val subjectId = subjectIds[selectedSubject] ?: 0L
+        viewModel.setSelectedSubject(subjectId)
+        onSubjectSelected(selectedSubject)
+    }
+
+    // Animate progress changes
+    val animatedProgress by animateFloatAsState(
+        targetValue = timerState.progress,
+        label = "timer_progress_animation"
+    )
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Mode selection
+        // Mode selection with enhanced visuals
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.primaryContainer
@@ -276,27 +290,30 @@ fun TimerScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
         
-        // Timer display
+        // Timer display - Use the animated progress instead of timerState.progress
         Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(280.dp)
-                .padding(16.dp)
+            modifier = Modifier.padding(vertical = 32.dp),
+            contentAlignment = Alignment.Center
         ) {
-            // Timer background with animated progress
-            val animatedProgress by animateFloatAsState(
-                targetValue = timerState.progress,
-                label = "TimerProgress"
+            // Background circle
+            CircularProgressIndicator(
+                progress = 1f,
+                modifier = Modifier.size(250.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                strokeWidth = 8.dp,
+                strokeCap = StrokeCap.Round
             )
             
+            // Progress indicator with animation
             CircularProgressIndicator(
                 progress = animatedProgress,
-                modifier = Modifier.size(280.dp),
-                strokeWidth = 16.dp,
+                modifier = Modifier.size(250.dp),
                 color = if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                strokeWidth = 8.dp,
+                strokeCap = StrokeCap.Round
             )
             
+            // Time display
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {

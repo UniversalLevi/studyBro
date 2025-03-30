@@ -42,19 +42,26 @@ import com.example.studymate.ui.navigation.Screen
 import com.example.studymate.ui.screens.home.HomeScreen
 import com.example.studymate.ui.screens.settings.SettingsScreen
 import com.example.studymate.ui.screens.stats.StatisticsScreen
-import com.example.studymate.ui.screens.tasks.TasksScreen
+import com.example.studymate.ui.screens.tasks.TaskItem
 import com.example.studymate.ui.screens.timer.TimerScreen
 import com.example.studymate.ui.theme.StudyMateTheme
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.example.studymate.data.model.StudySession
 
 class MainViewModel : ViewModel() {
     private val _subjects = MutableStateFlow(
         listOf("Mathematics", "History", "Physics", "Economics", "English")
     )
     val subjects: StateFlow<List<String>> = _subjects.asStateFlow()
+    
+    private val _studySessions = MutableStateFlow<List<StudySession>>(emptyList())
+    val studySessions: StateFlow<List<StudySession>> = _studySessions.asStateFlow()
+    
+    private val _tasks = MutableStateFlow<List<TaskItem>>(emptyList())
+    val tasks: StateFlow<List<TaskItem>> = _tasks.asStateFlow()
     
     fun addSubject(subject: String) {
         if (subject.isNotBlank() && !_subjects.value.contains(subject)) {
@@ -64,6 +71,11 @@ class MainViewModel : ViewModel() {
     
     fun removeSubject(subject: String) {
         _subjects.value = _subjects.value.filter { it != subject }
+    }
+    
+    fun resetStats() {
+        _studySessions.value = emptyList()
+        _tasks.value = _tasks.value.map { it.copy(isCompleted = false) }
     }
 }
 

@@ -138,12 +138,17 @@ fun NavigationGraph(
         
         composable(NavigationItem.Timer.route) {
             TimerScreen(
-                subjects = subjects
+                subjects = subjects.map { it },
+                subjectIds = subjects.associateWith { 0L }
             )
         }
         
         composable(NavigationItem.Statistics.route) {
-            StatisticsScreen()
+            StatisticsScreen(
+                tasks = mainViewModel.tasks.collectAsState().value,
+                studySessions = mainViewModel.studySessions.collectAsState().value,
+                onResetStats = { mainViewModel.resetStats() }
+            )
         }
         
         composable(NavigationItem.Settings.route) {

@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.RingtoneManager
@@ -15,12 +16,16 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studymate.R
+import com.example.studymate.StudyMateApp
+import com.example.studymate.data.model.SessionType
+import com.example.studymate.receiver.NotificationReceiver
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 class TimerViewModel : ViewModel() {
@@ -29,6 +34,8 @@ class TimerViewModel : ViewModel() {
     
     private var timerJob: Job? = null
     private var isBreakMode = false
+    private var selectedSubjectId: Long = 0
+    private var startTime: LocalDateTime? = null
     
     fun setDuration(minutes: Int) {
         _timerState.value = TimerState(
@@ -37,19 +44,26 @@ class TimerViewModel : ViewModel() {
         )
     }
     
+    fun setSelectedSubject(subjectId: Long) {
+        selectedSubjectId = subjectId
+    }
+    
     fun startTimer() {
         if (timerJob != null) return
         
         _timerState.value = _timerState.value.copy(isRunning = true)
         
+        // Record start time when timer begins
+        startTime = LocalDateTime.now()
+        
         timerJob = viewModelScope.launch {
-            val startTime = System.currentTimeMillis()
+            val startTimeMillis = System.currentTimeMillis()
             val totalTime = _timerState.value.remainingTimeMillis
             
             while (_timerState.value.remainingTimeMillis > 0 && _timerState.value.isRunning) {
-                delay(100) // Update every 100ms for smoother progress
+                delay(100) // Update every 100ms for smoother progress with animation
                 
-                val elapsedTime = System.currentTimeMillis() - startTime
+                val elapsedTime = System.currentTimeMillis() - startTimeMillis
                 val remainingTime = (totalTime - elapsedTime).coerceAtLeast(0)
                 
                 _timerState.value = _timerState.value.copy(
@@ -61,7 +75,8 @@ class TimerViewModel : ViewModel() {
                 if (remainingTime <= 0) {
                     _timerState.value = _timerState.value.copy(
                         isRunning = false,
-                        isCompleted = true
+                        isCompleted = true,
+                        progress = 1f
                     )
                     break
                 }
@@ -88,6 +103,8 @@ class TimerViewModel : ViewModel() {
             progress = 0f,
             isCompleted = false
         )
+        // Reset start time when timer is reset
+        startTime = null
     }
     
     fun toggleMode() {
@@ -100,6 +117,9 @@ class TimerViewModel : ViewModel() {
     
     private fun onTimerComplete() {
         viewModelScope.launch {
+            // Record end time when timer completes
+            val endTime = LocalDateTime.now()
+            
             // Update state to completed
             _timerState.value = _timerState.value.copy(
                 isRunning = false,
@@ -108,10 +128,22 @@ class TimerViewModel : ViewModel() {
                 progress = 1f
             )
             
+            // Record session data if we have valid start and end times
+            startTime?.let { start ->
+                val sessionType = if (isBreakMode) SessionType.BREAK else SessionType.STUDY
+                val durationMinutes = (TimeUnit.MILLISECONDS.toMinutes(_timerState.value.totalTimeMillis)).toInt()
+                
+                // Record study session in database through broadcast receiver
+                val intent = Intent(NotificationReceiver.ACTION_TIMER_FINISHED).apply {
+                    putExtra(NotificationReceiver.EXTRA_SESSION_TYPE, sessionType.ordinal)
+                    putExtra(NotificationReceiver.EXTRA_SUBJECT_ID, selectedSubjectId)
+                    putExtra(NotificationReceiver.EXTRA_START_TIME, start.toString())
+                    putExtra(NotificationReceiver.EXTRA_END_TIME, endTime.toString())
+                }
+            }
+            
             // Auto switch mode after completion
             toggleMode()
-            
-            // The actual notification will be shown by the UI when it detects isCompleted = true
         }
     }
     
@@ -140,10 +172,32 @@ class TimerViewModel : ViewModel() {
                 notificationManager.createNotificationChannel(channel)
             }
             
-            // Build notification
+            // Record session in database first
+            startTime?.let { start ->
+                val app = context.applicationContext as StudyMateApp
+                val sessionType = if (isBreakMode) SessionType.BREAK else SessionType.STUDY
+                val endTime = LocalDateTime.now()
+                val durationMinutes = (TimeUnit.MILLISECONDS.toMinutes(_timerState.value.totalTimeMillis)).toInt()
+                
+                viewModelScope.launch {
+                    app.studyRepository.recordStudySession(
+                        subjectId = selectedSubjectId,
+                        startTime = start,
+                        endTime = endTime,
+                        sessionType = sessionType
+                    )
+                }
+            }
+            
+            // Build notification with better UI elements
+            val title = if (isBreakMode) "Break Time Completed!" else "Study Session Complete!"
+            val message = if (isBreakMode) 
+                "Time to get back to studying!" 
+                else "Great job! Take a well-deserved break."
+                
             val notification = NotificationCompat.Builder(context, "timer_channel")
-                .setContentTitle("Study Timer Complete!")
-                .setContentText("Great job! Your study session is complete.")
+                .setContentTitle(title)
+                .setContentText(message)
                 .setSmallIcon(android.R.drawable.ic_dialog_info) // Use a system icon as fallback
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)

@@ -3,12 +3,19 @@ package com.example.studymate.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.example.studymate.StudyMateApp
 import com.example.studymate.data.model.SessionType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import java.time.LocalDate
 
 /**
  * Broadcast receiver to handle notifications like timer completion
@@ -58,7 +65,21 @@ class NotificationReceiver : BroadcastReceiver() {
         val taskRepository = studyMateApp.taskRepository
         
         CoroutineScope(Dispatchers.IO).launch {
-            // You would implement this to create a notification for the task reminder
+            val task = taskRepository.getTaskWithSubject(taskId)
+            task?.let {
+                if (it.task.deadline.isBefore(LocalDate.now())) {
+                    // Create and show notification for overdue task
+                    val notification = NotificationCompat.Builder(context, "task_channel")
+                        .setContentTitle("Task Overdue: " + it.task.name)
+                        .setContentText("The deadline for this task has passed.")
+                        .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setAutoCancel(true)
+                        .build()
+                    
+                    NotificationManagerCompat.from(context).notify(taskId.toInt(), notification)
+                }
+            }
         }
     }
     
