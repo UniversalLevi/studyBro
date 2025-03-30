@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -30,11 +32,19 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,19 +65,31 @@ fun HomeScreen(
     onTaskClick: (Long) -> Unit,
     onAddTaskClick: () -> Unit,
     onTaskStatusChange: (Long, Boolean) -> Unit,
-    onStartTimerClick: () -> Unit
+    onStartTimerClick: () -> Unit,
+    subjects: List<String> = listOf("Mathematics", "History", "Physics", "Economics", "English"),
+    onAddSubject: (String) -> Unit = {},
+    onRemoveSubject: (String) -> Unit = {}
 ) {
-    val todayTasks = tasks.filter { 
-        it.deadline?.isEqual(LocalDate.now()) == true && !it.isCompleted 
+    // Use derivedStateOf for filtered tasks
+    val todayTasks by remember(tasks) {
+        derivedStateOf {
+            tasks.filter { 
+                it.deadline?.isEqual(LocalDate.now()) == true && !it.isCompleted 
+            }
+        }
     }
     
     val pendingTasks = tasks.filter { !it.isCompleted }
     val completedTasks = tasks.filter { it.isCompleted }
     
-    val completionRate = if (tasks.isNotEmpty()) {
-        completedTasks.size.toFloat() / tasks.size
-    } else {
-        0f
+    val completionRate by remember(tasks) {
+        derivedStateOf {
+            if (tasks.isNotEmpty()) {
+                tasks.count { it.isCompleted }.toFloat() / tasks.size
+            } else {
+                0f
+            }
+        }
     }
     
     Scaffold(
@@ -155,6 +177,13 @@ fun HomeScreen(
                 tasks = todayTasks,
                 onTaskClick = onTaskClick,
                 onTaskStatusChange = onTaskStatusChange
+            )
+            
+            // Subject Management Section
+            SubjectManagementSection(
+                subjects = subjects,
+                onAddSubject = onAddSubject,
+                onRemoveSubject = onRemoveSubject
             )
         }
     }
@@ -404,5 +433,128 @@ fun HomeTaskItem(
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
             )
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SubjectManagementSection(
+    subjects: List<String>,
+    onAddSubject: (String) -> Unit,
+    onRemoveSubject: (String) -> Unit
+) {
+    var showAddDialog by remember { mutableStateOf(false) }
+    var newSubjectName by remember { mutableStateOf("") }
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Subjects",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Button(
+                    onClick = { showAddDialog = true }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Subject"
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Add")
+                }
+            }
+            
+            if (subjects.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No subjects added yet",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            } else {
+                Column {
+                    subjects.forEach { subject ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = subject,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            
+                            OutlinedButton(
+                                onClick = { onRemoveSubject(subject) }
+                            ) {
+                                Text("Remove")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showAddDialog = false 
+                newSubjectName = ""
+            },
+            title = { Text("Add New Subject") },
+            text = {
+                TextField(
+                    value = newSubjectName,
+                    onValueChange = { newSubjectName = it },
+                    label = { Text("Subject Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newSubjectName.isNotBlank()) {
+                            onAddSubject(newSubjectName)
+                            newSubjectName = ""
+                            showAddDialog = false
+                        }
+                    }
+                ) {
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { 
+                        showAddDialog = false
+                        newSubjectName = ""
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 } 

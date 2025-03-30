@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -27,6 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -43,8 +46,30 @@ import com.example.studymate.ui.screens.tasks.TasksScreen
 import com.example.studymate.ui.screens.timer.TimerScreen
 import com.example.studymate.ui.theme.StudyMateTheme
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+class MainViewModel : ViewModel() {
+    private val _subjects = MutableStateFlow(
+        listOf("Mathematics", "History", "Physics", "Economics", "English")
+    )
+    val subjects: StateFlow<List<String>> = _subjects.asStateFlow()
+    
+    fun addSubject(subject: String) {
+        if (subject.isNotBlank() && !_subjects.value.contains(subject)) {
+            _subjects.value = _subjects.value + subject
+        }
+    }
+    
+    fun removeSubject(subject: String) {
+        _subjects.value = _subjects.value.filter { it != subject }
+    }
+}
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: MainViewModel by viewModels()
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -56,7 +81,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen()
+                    MainScreen(viewModel)
                 }
             }
         }
@@ -64,7 +89,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(mainViewModel: MainViewModel = viewModel()) {
     val navController = rememberNavController()
     val navItems = listOf(
         NavigationItem.Home,
@@ -100,7 +125,8 @@ fun MainScreen() {
                     shadowElevation = 8.dp,
                 ) {
                     NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 0.dp // Remove elevation which can cause shadow/dark areas
                     ) {
                         val currentDestination = navBackStackEntry?.destination
                         
@@ -124,14 +150,19 @@ fun MainScreen() {
                 }
             }
         },
+        contentColor = MaterialTheme.colorScheme.onBackground,
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            NavigationGraph(navController = navController)
+            NavigationGraph(
+                navController = navController,
+                mainViewModel = mainViewModel
+            )
         }
     }
 }

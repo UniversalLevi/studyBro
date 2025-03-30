@@ -1,6 +1,7 @@
 package com.example.studymate.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -12,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.studymate.MainViewModel
 import com.example.studymate.ui.screens.home.HomeScreen
 import com.example.studymate.ui.screens.settings.SettingsScreen
 import com.example.studymate.ui.screens.stats.StatisticsScreen
@@ -24,7 +26,13 @@ import com.example.studymate.ui.screens.timer.TimerScreen
 import java.time.LocalDate
 
 @Composable
-fun NavigationGraph(navController: NavHostController) {
+fun NavigationGraph(
+    navController: NavHostController,
+    mainViewModel: MainViewModel
+) {
+    // Get subjects from the ViewModel
+    val subjects by mainViewModel.subjects.collectAsState()
+    
     // Sample tasks data
     var tasks by remember { 
         mutableStateOf(
@@ -97,7 +105,10 @@ fun NavigationGraph(navController: NavHostController) {
                 },
                 onStartTimerClick = {
                     navController.navigate(NavigationItem.Timer.route)
-                }
+                },
+                subjects = subjects,
+                onAddSubject = { mainViewModel.addSubject(it) },
+                onRemoveSubject = { mainViewModel.removeSubject(it) }
             )
         }
         
@@ -126,7 +137,9 @@ fun NavigationGraph(navController: NavHostController) {
         }
         
         composable(NavigationItem.Timer.route) {
-            TimerScreen()
+            TimerScreen(
+                subjects = subjects
+            )
         }
         
         composable(NavigationItem.Statistics.route) {

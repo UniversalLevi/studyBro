@@ -1,8 +1,10 @@
 package com.example.studymate.ui.screens.timer
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
@@ -26,6 +28,7 @@ class TimerViewModel : ViewModel() {
     val timerState: StateFlow<TimerState> = _timerState.asStateFlow()
     
     private var timerJob: Job? = null
+    private var isBreakMode = false
     
     fun setDuration(minutes: Int) {
         _timerState.value = TimerState(
@@ -87,53 +90,85 @@ class TimerViewModel : ViewModel() {
         )
     }
     
+    fun toggleMode() {
+        isBreakMode = !isBreakMode
+        val defaultDuration = if (isBreakMode) 5 else 25
+        setDuration(defaultDuration)
+    }
+    
+    fun isInBreakMode(): Boolean = isBreakMode
+    
     private fun onTimerComplete() {
-        // Will be called by the UI to show notifications and vibrate
+        viewModelScope.launch {
+            // Update state to completed
+            _timerState.value = _timerState.value.copy(
+                isRunning = false,
+                isCompleted = true,
+                remainingTimeMillis = 0,
+                progress = 1f
+            )
+            
+            // Auto switch mode after completion
+            toggleMode()
+            
+            // The actual notification will be shown by the UI when it detects isCompleted = true
+        }
     }
     
     fun showTimerCompleteNotification(context: Context) {
-        // Create notification channel
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "timer_channel"
-            val channel = NotificationChannel(
-                channelId,
-                "Timer Notifications",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Notifications for completed timers"
-                enableVibration(true)
+        try {
+            // Create notification channel
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channelId = "timer_channel"
+                val channel = NotificationChannel(
+                    channelId,
+                    "Timer Notifications",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Notifications for completed timers"
+                    enableVibration(true)
+                    
+                    // Add sound
+                    val audioAttributes = AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                    setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), audioAttributes)
+                }
                 
-                // Add sound
-                val audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-                setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), audioAttributes)
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                notificationManager.createNotificationChannel(channel)
             }
             
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-        
-        // Build notification
-        val notification = NotificationCompat.Builder(context, "timer_channel")
-            .setContentTitle("Study Timer Complete!")
-            .setContentText("Great job! Your study session is complete.")
-            .setSmallIcon(R.drawable.ic_notification)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .build()
-        
-        // Show notification
-        NotificationManagerCompat.from(context).notify(1, notification)
-        
-        // Vibrate device
-        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(500)
+            // Build notification
+            val notification = NotificationCompat.Builder(context, "timer_channel")
+                .setContentTitle("Study Timer Complete!")
+                .setContentText("Great job! Your study session is complete.")
+                .setSmallIcon(android.R.drawable.ic_dialog_info) // Use a system icon as fallback
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .build()
+            
+            // Check for notification permission before showing
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                    NotificationManagerCompat.from(context).notify(1, notification)
+                }
+            } else {
+                NotificationManagerCompat.from(context).notify(1, notification)
+            }
+            
+            // Vibrate device
+            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(500)
+            }
+        } catch (e: Exception) {
+            // Log the error but don't crash
+            e.printStackTrace()
         }
     }
 }

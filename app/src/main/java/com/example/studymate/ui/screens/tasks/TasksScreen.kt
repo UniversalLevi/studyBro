@@ -75,28 +75,30 @@ enum class TaskPriority {
 @Composable
 fun TasksScreen(
     tasks: List<TaskItem>,
-    navigateToTaskDetail: (Long) -> Unit, 
+    navigateToTaskDetail: (Long) -> Unit,
     navigateToAddTask: () -> Unit,
     onTaskStatusChange: (Long, Boolean) -> Unit,
     onTaskDelete: (Long) -> Unit
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabTitles = listOf("All", "Pending", "Completed")
+    val tabTitles = listOf("Pending", "Completed")
     
     // Filter tasks based on tab selection
     val today = LocalDate.now()
     
-    // Update tasks for each tab after any status change
-    val allTasks = tasks
-    val pendingTasks = tasks.filter { !it.isCompleted && (it.deadline == null || it.deadline >= today) }
-    val completedTasks = tasks.filter { it.isCompleted }
+    // Memoize filtered tasks to avoid recomputation
+    val pendingTasks = remember(tasks) {
+        tasks.filter { !it.isCompleted && (it.deadline == null || it.deadline >= today) }
+    }
+    val completedTasks = remember(tasks) {
+        tasks.filter { it.isCompleted }
+    }
     
     // Choose which task list to display based on selected tab
     val displayedTasks = when (selectedTabIndex) {
-        0 -> allTasks
-        1 -> pendingTasks
-        2 -> completedTasks
-        else -> allTasks
+        0 -> pendingTasks
+        1 -> completedTasks
+        else -> pendingTasks
     }
     
     Scaffold(
@@ -137,6 +139,13 @@ fun TasksScreen(
                 onTaskStatusChange = { taskId, completed ->
                     // Call the actual status change function
                     onTaskStatusChange(taskId, completed)
+                    
+                    // Optional: If a task is completed and we're in the pending tab, 
+                    // you could switch to completed tab to show the task
+                    if (completed && selectedTabIndex == 0) {
+                        // Uncomment the line below if you want to auto-switch to completed tab
+                        // selectedTabIndex = 1
+                    }
                 },
                 onTaskClick = navigateToTaskDetail,
                 onTaskDelete = onTaskDelete
@@ -160,7 +169,10 @@ fun TaskList(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(tasks) { task ->
+            items(
+                items = tasks,
+                key = { task -> task.id }
+            ) { task ->
                 TaskListItem(
                     task = task,
                     onStatusChange = { isCompleted -> onTaskStatusChange(task.id, isCompleted) },

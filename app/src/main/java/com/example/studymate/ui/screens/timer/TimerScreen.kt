@@ -73,25 +73,26 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.studymate.ui.components.SimpleProgressRing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TimerScreen(viewModel: TimerViewModel = viewModel()) {
+fun TimerScreen(
+    viewModel: TimerViewModel = viewModel(),
+    subjects: List<String> = emptyList(),
+    onSubjectSelected: (String) -> Unit = {}
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
     
     // Get timer state from ViewModel
     val timerState by viewModel.timerState.collectAsState()
+    val isBreakTime = viewModel.isInBreakMode()
     
-    // For setup mode (initial duration selection)
-    var isSetupMode by remember { mutableStateOf(!timerState.isRunning && timerState.progress == 0f) }
-    var selectedDuration by remember { mutableIntStateOf(25) } // Default 25 minutes
-    
-    // Notification permission handling
+    // For setting up notification permissions
     val hasNotificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         ContextCompat.checkSelfPermission(
             context,
@@ -102,24 +103,26 @@ fun TimerScreen(viewModel: TimerViewModel = viewModel()) {
     }
     
     var shouldRequestPermission by remember { mutableStateOf(false) }
-    
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted && timerState.isCompleted) {
             viewModel.showTimerCompleteNotification(context)
-        } else if (!isGranted) {
-            scope.launch {
-                snackbarHostState.showSnackbar("Notification permission is required for timer alerts")
-            }
         }
     }
     
     // Check for timer completion and show notification
     LaunchedEffect(timerState.isCompleted) {
         if (timerState.isCompleted) {
+            // Give UI time to update before showing notification
+            delay(300)
             if (hasNotificationPermission) {
-                viewModel.showTimerCompleteNotification(context)
+                try {
+                    viewModel.showTimerCompleteNotification(context)
+                } catch (e: Exception) {
+                    // Prevent app crash if notification fails
+                    e.printStackTrace()
+                }
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 shouldRequestPermission = true
             }
@@ -150,189 +153,257 @@ fun TimerScreen(viewModel: TimerViewModel = viewModel()) {
         }
     }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Focus Timer") }
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+    var selectedSubject by remember { mutableStateOf(if (subjects.isNotEmpty()) subjects.first() else "") }
+    var showSubjectDropdown by remember { mutableStateOf(false) }
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Mode selection
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.primaryContainer
         ) {
-            if (isSetupMode) {
-                // Setup Mode UI
-                Text(
-                    text = "Set Focus Time",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 24.dp)
-                )
-                
-                Text(
-                    text = "$selectedDuration minutes",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                
-                Slider(
-                    value = selectedDuration.toFloat(),
-                    onValueChange = { selectedDuration = it.toInt() },
-                    valueRange = 5f..60f,
-                    steps = 11,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                )
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                Button(
-                    onClick = {
-                        viewModel.setDuration(selectedDuration)
-                        isSetupMode = false
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 32.dp)
+            Row(
+                modifier = Modifier
+                    .padding(4.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (!isBreakTime) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Text(
-                        text = "Start Timer",
-                        fontSize = 18.sp,
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
-                }
-            } else {
-                // Timer Mode UI
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.padding(bottom = 32.dp)
-                ) {
-                    CircularProgressIndicator(
-                        progress = timerState.progress,
-                        modifier = Modifier.size(250.dp),
-                        strokeWidth = 12.dp,
-                        strokeCap = StrokeCap.Round,
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                    
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = String.format(
-                                "%02d:%02d",
-                                timerState.remainingMinutes,
-                                timerState.remainingSeconds
-                            ),
-                            style = MaterialTheme.typography.displayLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        
-                        Text(
-                            text = if (timerState.isRunning) "Focus Time" else if (timerState.isCompleted) "Completed!" else "Paused",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        )
-                    }
-                }
-                
-                // Timer controls
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    if (!timerState.isCompleted) {
-                        // Play/Pause button
-                        IconButton(
-                            onClick = {
-                                if (timerState.isRunning) {
-                                    viewModel.pauseTimer()
-                                } else {
-                                    viewModel.startTimer()
-                                }
-                            },
-                            modifier = Modifier.size(64.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (timerState.isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = if (timerState.isRunning) "Pause" else "Start",
-                                modifier = Modifier.size(36.dp)
-                            )
-                        }
-                    }
-                    
-                    // Reset button
-                    IconButton(
+                    TextButton(
                         onClick = {
-                            viewModel.resetTimer()
-                            if (timerState.isCompleted) {
-                                isSetupMode = true
+                            if (isBreakTime) {
+                                viewModel.toggleMode()
                             }
                         },
-                        modifier = Modifier.size(64.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Reset",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
-                
-                if (timerState.isCompleted) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Button(
-                        onClick = {
-                            isSetupMode = true
-                            viewModel.resetTimer()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "New Timer",
-                            fontSize = 18.sp,
-                            modifier = Modifier.padding(vertical = 4.dp)
+                            "Study",
+                            color = if (!isBreakTime) MaterialTheme.colorScheme.onPrimary 
+                                else MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
                 
-                // Tips card
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (isBreakTime) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
+                    TextButton(
+                        onClick = {
+                            if (!isBreakTime) {
+                                viewModel.toggleMode()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "Focus Tip",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        Text(
-                            text = "Stay focused on one task at a time. Put away distractions like your phone.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Start
+                            "Break",
+                            color = if (isBreakTime) MaterialTheme.colorScheme.onPrimary 
+                                else MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
             }
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Subject selection (only during study mode)
+        if (!isBreakTime && subjects.isNotEmpty()) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Book,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        Text(
+                            text = "Subject: $selectedSubject",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 16.dp)
+                        )
+                        
+                        Button(
+                            onClick = { showSubjectDropdown = true },
+                            enabled = !timerState.isRunning
+                        ) {
+                            Text("Change")
+                        }
+                    }
+                    
+                    DropdownMenu(
+                        expanded = showSubjectDropdown && !timerState.isRunning,
+                        onDismissRequest = { showSubjectDropdown = false }
+                    ) {
+                        subjects.forEach { subject ->
+                            DropdownMenuItem(
+                                text = { Text(subject) },
+                                onClick = {
+                                    selectedSubject = subject
+                                    onSubjectSelected(subject)
+                                    showSubjectDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+        
+        // Timer display
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(280.dp)
+                .padding(16.dp)
+        ) {
+            // Timer background with animated progress
+            val animatedProgress by animateFloatAsState(
+                targetValue = timerState.progress,
+                label = "TimerProgress"
+            )
+            
+            CircularProgressIndicator(
+                progress = animatedProgress,
+                modifier = Modifier.size(280.dp),
+                strokeWidth = 16.dp,
+                color = if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+            
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = String.format(
+                        "%02d:%02d",
+                        timerState.remainingMinutes,
+                        timerState.remainingSeconds
+                    ),
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                
+                Text(
+                    text = if (isBreakTime) "Break Time" else "Study Time",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        // Controls
+        Row(
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Reset button
+            IconButton(
+                onClick = {
+                    viewModel.resetTimer()
+                },
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Reset Timer",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+            
+            // Play/Pause button
+            IconButton(
+                onClick = { 
+                    if (timerState.isRunning) {
+                        viewModel.pauseTimer()
+                    } else {
+                        viewModel.startTimer()
+                    }
+                },
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    imageVector = if (timerState.isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (timerState.isRunning) "Pause Timer" else "Start Timer",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+            
+            // Empty spacer for symmetry
+            Box(
+                modifier = Modifier.size(64.dp)
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        // Time adjustment slider (only when not running)
+        if (!timerState.isRunning) {
+            // Calculate minutes from milliseconds
+            val durationMinutes = TimeUnit.MILLISECONDS.toMinutes(timerState.totalTimeMillis).toInt()
+            var sliderPosition by remember { mutableStateOf(durationMinutes.toFloat()) }
+            
+            // Update slider position when duration changes
+            LaunchedEffect(durationMinutes) {
+                sliderPosition = durationMinutes.toFloat()
+            }
+            
+            Text(
+                text = "Adjust Time: ${sliderPosition.toInt()} minutes",
+                style = MaterialTheme.typography.titleMedium
+            )
+            
+            Slider(
+                value = sliderPosition,
+                onValueChange = { sliderPosition = it },
+                valueRange = if (isBreakTime) 1f..15f else 1f..60f,
+                steps = if (isBreakTime) 14 else 59,
+                colors = SliderDefaults.colors(
+                    thumbColor = if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary,
+                    activeTrackColor = if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary
+                ),
+                modifier = Modifier.padding(horizontal = 16.dp),
+                onValueChangeFinished = {
+                    viewModel.setDuration(sliderPosition.toInt())
+                }
+            )
         }
     }
 }
