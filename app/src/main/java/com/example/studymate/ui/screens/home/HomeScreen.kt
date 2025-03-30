@@ -106,14 +106,7 @@ fun HomeScreen(
                 completionRate = completionRate
             )
             
-            // Today's tasks section
-            TodayTasksSection(
-                tasks = todayTasks,
-                onTaskClick = onTaskClick,
-                onTaskStatusChange = onTaskStatusChange
-            )
-            
-            // Start timer button
+            // Start timer button - moved up before today's tasks
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -156,6 +149,13 @@ fun HomeScreen(
                     )
                 }
             }
+            
+            // Today's tasks section
+            TodayTasksSection(
+                tasks = todayTasks,
+                onTaskClick = onTaskClick,
+                onTaskStatusChange = onTaskStatusChange
+            )
         }
     }
 }
@@ -164,9 +164,11 @@ fun HomeScreen(
 fun WelcomeSection() {
     val currentHour = java.time.LocalTime.now().hour
     val greeting = when {
+        currentHour < 6 -> "Good Night"
         currentHour < 12 -> "Good Morning"
         currentHour < 18 -> "Good Afternoon"
-        else -> "Good Evening"
+        currentHour < 22 -> "Good Evening"
+        else -> "Good Night"
     }
     
     Column(
@@ -364,11 +366,23 @@ fun HomeTaskItem(
                 overflow = TextOverflow.Ellipsis
             )
             
-            Text(
-                text = task.subject,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = task.subject,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                
+                if (task.time != null) {
+                    Text(
+                        text = " • ${task.time}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
         }
         
         Surface(

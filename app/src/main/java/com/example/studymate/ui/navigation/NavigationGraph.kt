@@ -35,6 +35,7 @@ fun NavigationGraph(navController: NavHostController) {
                     subject = "Mathematics",
                     subjectColor = androidx.compose.ui.graphics.Color(0xFF4285F4),
                     deadline = LocalDate.now().plusDays(1),
+                    time = "14:30",
                     priority = TaskPriority.HIGH,
                     isCompleted = false
                 ),
@@ -44,6 +45,7 @@ fun NavigationGraph(navController: NavHostController) {
                     subject = "History",
                     subjectColor = androidx.compose.ui.graphics.Color(0xFFEA4335),
                     deadline = LocalDate.now().plusDays(3),
+                    time = "16:00",
                     priority = TaskPriority.MEDIUM,
                     isCompleted = false
                 ),
@@ -53,6 +55,7 @@ fun NavigationGraph(navController: NavHostController) {
                     subject = "Physics",
                     subjectColor = androidx.compose.ui.graphics.Color(0xFFFBBC05),
                     deadline = LocalDate.now().plusDays(2),
+                    time = "10:15",
                     priority = TaskPriority.HIGH,
                     isCompleted = false
                 ),
@@ -62,6 +65,7 @@ fun NavigationGraph(navController: NavHostController) {
                     subject = "English",
                     subjectColor = androidx.compose.ui.graphics.Color(0xFF34A853),
                     deadline = LocalDate.now().minusDays(1),
+                    time = "09:00",
                     priority = TaskPriority.LOW,
                     isCompleted = true
                 )

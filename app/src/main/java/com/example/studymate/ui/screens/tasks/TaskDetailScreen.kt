@@ -125,6 +125,14 @@ fun TaskDetailScreen(
                     content = task.deadline?.format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")) ?: "No deadline"
                 )
                 
+                // Display time if available
+                if (task.time != null) {
+                    TaskDetailSection(
+                        title = "Time",
+                        content = task.time
+                    )
+                }
+                
                 Divider()
                 
                 // Additional sections can be added here (notes, description, etc.)

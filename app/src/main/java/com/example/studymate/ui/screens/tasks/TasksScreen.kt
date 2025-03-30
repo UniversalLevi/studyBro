@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -61,6 +62,7 @@ data class TaskItem(
     val subject: String,
     val subjectColor: Color,
     val deadline: LocalDate?,
+    val time: String? = null,
     val priority: TaskPriority,
     val isCompleted: Boolean
 )
@@ -81,15 +83,20 @@ fun TasksScreen(
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabTitles = listOf("All", "Pending", "Completed")
     
-    var filteredTasks by remember {
-        mutableStateOf(
-            when (selectedTabIndex) {
-                0 -> tasks
-                1 -> tasks.filter { !it.isCompleted }
-                2 -> tasks.filter { it.isCompleted }
-                else -> tasks
-            }
-        )
+    // Filter tasks based on tab selection
+    val today = LocalDate.now()
+    
+    // Update tasks for each tab after any status change
+    val allTasks = tasks
+    val pendingTasks = tasks.filter { !it.isCompleted && (it.deadline == null || it.deadline >= today) }
+    val completedTasks = tasks.filter { it.isCompleted }
+    
+    // Choose which task list to display based on selected tab
+    val displayedTasks = when (selectedTabIndex) {
+        0 -> allTasks
+        1 -> pendingTasks
+        2 -> completedTasks
+        else -> allTasks
     }
     
     Scaffold(
@@ -119,23 +126,18 @@ fun TasksScreen(
                 tabTitles.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTabIndex == index,
-                        onClick = {
-                            selectedTabIndex = index
-                            filteredTasks = when (index) {
-                                0 -> tasks
-                                1 -> tasks.filter { !it.isCompleted }
-                                2 -> tasks.filter { it.isCompleted }
-                                else -> tasks
-                            }
-                        },
+                        onClick = { selectedTabIndex = index },
                         text = { Text(title) }
                     )
                 }
             }
             
             TaskList(
-                tasks = filteredTasks,
-                onTaskStatusChange = onTaskStatusChange,
+                tasks = displayedTasks,
+                onTaskStatusChange = { taskId, completed ->
+                    // Call the actual status change function
+                    onTaskStatusChange(taskId, completed)
+                },
                 onTaskClick = navigateToTaskDetail,
                 onTaskDelete = onTaskDelete
             )
@@ -302,11 +304,35 @@ fun TaskListItem(
             Column(
                 horizontalAlignment = Alignment.End
             ) {
-                Text(
-                    text = formatDeadline(task.deadline),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f * textAlpha)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Add time display if available
+                    if (task.time != null) {
+                        Icon(
+                            imageVector = Icons.Default.Timer,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f * textAlpha)
+                        )
+                        
+                        Spacer(modifier = Modifier.width(4.dp))
+                        
+                        Text(
+                            text = task.time,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f * textAlpha)
+                        )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    
+                    Text(
+                        text = formatDeadline(task.deadline),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f * textAlpha)
+                    )
+                }
                 
                 // Show undo or delete button based on task status
                 if (isCompleted) {

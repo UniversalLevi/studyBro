@@ -42,6 +42,7 @@ import com.example.studymate.ui.screens.stats.StatisticsScreen
 import com.example.studymate.ui.screens.tasks.TasksScreen
 import com.example.studymate.ui.screens.timer.TimerScreen
 import com.example.studymate.ui.theme.StudyMateTheme
+import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,28 +95,36 @@ fun MainScreen() {
                 enter = slideInVertically(initialOffsetY = { it }),
                 exit = slideOutVertically(targetOffsetY = { it })
             ) {
-                NavigationBar {
-                    val currentDestination = navBackStackEntry?.destination
-                    
-                    navItems.forEach { item ->
-                        NavigationBarItem(
-                            icon = { Icon(item.icon, contentDescription = null) },
-                            label = { Text(stringResource(item.labelResId)) },
-                            selected = currentDestination?.hierarchy?.any { it.route == item.route } == true,
-                            onClick = {
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 8.dp,
+                ) {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ) {
+                        val currentDestination = navBackStackEntry?.destination
+                        
+                        navItems.forEach { item ->
+                            NavigationBarItem(
+                                icon = { Icon(item.icon, contentDescription = null) },
+                                label = { Text(stringResource(item.labelResId)) },
+                                selected = currentDestination?.hierarchy?.any { it.route == item.route } == true,
+                                onClick = {
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Box(
             modifier = Modifier
