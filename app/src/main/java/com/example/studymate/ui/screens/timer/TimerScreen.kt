@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -391,36 +392,100 @@ fun TimerScreen(
         
         Spacer(modifier = Modifier.height(32.dp))
         
-        // Time adjustment slider (only when not running)
-        if (!timerState.isRunning) {
-            // Calculate minutes from milliseconds
-            val durationMinutes = TimeUnit.MILLISECONDS.toMinutes(timerState.totalTimeMillis).toInt()
-            var sliderPosition by remember { mutableStateOf(durationMinutes.toFloat()) }
-            
-            // Update slider position when duration changes
-            LaunchedEffect(durationMinutes) {
-                sliderPosition = durationMinutes.toFloat()
-            }
-            
-            Text(
-                text = "Adjust Time: ${sliderPosition.toInt()} minutes",
-                style = MaterialTheme.typography.titleMedium
-            )
-            
-            Slider(
-                value = sliderPosition,
-                onValueChange = { sliderPosition = it },
-                valueRange = if (isBreakTime) 1f..15f else 1f..60f,
-                steps = if (isBreakTime) 14 else 59,
-                colors = SliderDefaults.colors(
-                    thumbColor = if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary,
-                    activeTrackColor = if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary
-                ),
-                modifier = Modifier.padding(horizontal = 16.dp),
-                onValueChangeFinished = {
-                    viewModel.setDuration(sliderPosition.toInt())
+        // Time picker section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = if (isBreakTime) "Break Duration" else "Study Duration",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Calculate minutes from milliseconds
+                val durationMinutes = TimeUnit.MILLISECONDS.toMinutes(timerState.totalTimeMillis).toInt()
+                var sliderPosition by remember { mutableStateOf(durationMinutes.toFloat()) }
+                
+                // Update slider position when duration changes
+                LaunchedEffect(durationMinutes) {
+                    sliderPosition = durationMinutes.toFloat()
                 }
-            )
+                
+                // Time selection row with preset buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    val timeOptions = if (isBreakTime) 
+                        listOf(5, 10, 15) 
+                    else 
+                        listOf(25, 35, 45, 60)
+                    
+                    timeOptions.forEach { minutes ->
+                        OutlinedButton(
+                            onClick = { 
+                                sliderPosition = minutes.toFloat()
+                                viewModel.setDuration(minutes)
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            enabled = !timerState.isRunning,
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (sliderPosition.toInt() == minutes) 
+                                    MaterialTheme.colorScheme.primaryContainer 
+                                else 
+                                    MaterialTheme.colorScheme.surface
+                            )
+                        ) {
+                            Text(
+                                text = "$minutes min",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Current selected time
+                Text(
+                    text = "${sliderPosition.toInt()} minutes",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Slider for fine-tuning
+                if (!timerState.isRunning) {
+                    Slider(
+                        value = sliderPosition,
+                        onValueChange = { sliderPosition = it },
+                        valueRange = if (isBreakTime) 1f..30f else 1f..120f,
+                        steps = if (isBreakTime) 29 else 119,
+                        colors = SliderDefaults.colors(
+                            thumbColor = if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary,
+                            activeTrackColor = if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        onValueChangeFinished = {
+                            viewModel.setDuration(sliderPosition.toInt())
+                        },
+                        enabled = !timerState.isRunning
+                    )
+                }
+            }
         }
     }
 }

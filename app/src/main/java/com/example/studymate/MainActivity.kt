@@ -50,32 +50,157 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.example.studymate.data.model.StudySession
+import com.example.studymate.data.model.SessionType
+import com.example.studymate.ui.screens.tasks.TaskPriority
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 class MainViewModel : ViewModel() {
-    private val _subjects = MutableStateFlow(
-        listOf("Mathematics", "History", "Physics", "Economics", "English")
-    )
-    val subjects: StateFlow<List<String>> = _subjects.asStateFlow()
+    // Subjects
+    private val _subjects = mutableListOf<String>()
+    val subjects: List<String> get() = _subjects.toList()
     
-    private val _studySessions = MutableStateFlow<List<StudySession>>(emptyList())
-    val studySessions: StateFlow<List<StudySession>> = _studySessions.asStateFlow()
-    
+    // Tasks
     private val _tasks = MutableStateFlow<List<TaskItem>>(emptyList())
     val tasks: StateFlow<List<TaskItem>> = _tasks.asStateFlow()
     
+    // Study sessions
+    private val _studySessions = MutableStateFlow<List<StudySession>>(emptyList())
+    val studySessions: StateFlow<List<StudySession>> = _studySessions.asStateFlow()
+    
+    // Add a new subject
     fun addSubject(subject: String) {
-        if (subject.isNotBlank() && !_subjects.value.contains(subject)) {
-            _subjects.value = _subjects.value + subject
+        if (!_subjects.contains(subject)) {
+            _subjects.add(subject)
         }
     }
     
+    // Remove a subject
     fun removeSubject(subject: String) {
-        _subjects.value = _subjects.value.filter { it != subject }
+        _subjects.remove(subject)
     }
     
+    // Add a new task
+    fun addTask(task: TaskItem) {
+        _tasks.value = _tasks.value + task
+    }
+    
+    // Update a task status
+    fun updateTaskStatus(taskId: Long, completed: Boolean) {
+        _tasks.value = _tasks.value.map { task ->
+            if (task.id == taskId) {
+                task.copy(isCompleted = completed)
+            } else {
+                task
+            }
+        }
+    }
+    
+    // Delete a task
+    fun deleteTask(taskId: Long) {
+        _tasks.value = _tasks.value.filter { it.id != taskId }
+    }
+    
+    // Add a study session
+    fun addStudySession(session: StudySession) {
+        _studySessions.value = _studySessions.value + session
+    }
+    
+    // Reset statistics
     fun resetStats() {
         _studySessions.value = emptyList()
-        _tasks.value = _tasks.value.map { it.copy(isCompleted = false) }
+        _tasks.value = _tasks.value.map { 
+            it.copy(isCompleted = false) 
+        }
+    }
+    
+    // Initialize with sample data for testing
+    init {
+        // Add initial subjects
+        _subjects.addAll(listOf("Mathematics", "History", "Physics", "Economics", "English"))
+        
+        // Add sample tasks
+        val sampleTasks = listOf(
+            TaskItem(
+                id = 1,
+                title = "Complete Math Assignment",
+                subject = "Mathematics",
+                subjectColor = androidx.compose.ui.graphics.Color(0xFF4285F4),
+                deadline = LocalDate.now().plusDays(1),
+                time = "14:30",
+                priority = TaskPriority.HIGH,
+                isCompleted = false
+            ),
+            TaskItem(
+                id = 2,
+                title = "Read History Chapter 5",
+                subject = "History",
+                subjectColor = androidx.compose.ui.graphics.Color(0xFFEA4335),
+                deadline = LocalDate.now().plusDays(3),
+                time = "16:00",
+                priority = TaskPriority.MEDIUM,
+                isCompleted = false
+            ),
+            TaskItem(
+                id = 3,
+                title = "Prepare Physics Lab Report",
+                subject = "Physics",
+                subjectColor = androidx.compose.ui.graphics.Color(0xFFFBBC05),
+                deadline = LocalDate.now().plusDays(2),
+                time = "10:15",
+                priority = TaskPriority.HIGH,
+                isCompleted = false
+            ),
+            TaskItem(
+                id = 4,
+                title = "Complete Literature Essay",
+                subject = "English",
+                subjectColor = androidx.compose.ui.graphics.Color(0xFF34A853),
+                deadline = LocalDate.now().minusDays(1),
+                time = "09:00",
+                priority = TaskPriority.LOW,
+                isCompleted = true
+            )
+        )
+        _tasks.value = sampleTasks
+        
+        // Add some sample study sessions for the past week
+        val today = LocalDateTime.now()
+        val sampleSessions = listOf(
+            StudySession(
+                id = 1L,
+                subjectId = 1L,
+                startTime = today.minusDays(6).withHour(10),
+                endTime = today.minusDays(6).withHour(11).withMinute(30),
+                durationMinutes = 90,
+                sessionType = SessionType.STUDY
+            ),
+            StudySession(
+                id = 2L,
+                subjectId = 2L,
+                startTime = today.minusDays(5).withHour(14),
+                endTime = today.minusDays(5).withHour(15),
+                durationMinutes = 60,
+                sessionType = SessionType.STUDY
+            ),
+            StudySession(
+                id = 3L,
+                subjectId = 1L,
+                startTime = today.minusDays(3).withHour(9),
+                endTime = today.minusDays(3).withHour(10),
+                durationMinutes = 60,
+                sessionType = SessionType.STUDY
+            ),
+            StudySession(
+                id = 4L,
+                subjectId = 3L,
+                startTime = today.minusDays(1).withHour(16),
+                endTime = today.minusDays(1).withHour(18),
+                durationMinutes = 120,
+                sessionType = SessionType.STUDY
+            )
+        )
+        _studySessions.value = sampleSessions
     }
 }
 

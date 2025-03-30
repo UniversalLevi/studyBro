@@ -31,55 +31,10 @@ fun NavigationGraph(
     mainViewModel: MainViewModel
 ) {
     // Get subjects from the ViewModel
-    val subjects by mainViewModel.subjects.collectAsState()
+    val subjects = mainViewModel.subjects
     
-    // Sample tasks data
-    var tasks by remember { 
-        mutableStateOf(
-            listOf(
-                TaskItem(
-                    id = 1,
-                    title = "Complete Math Assignment",
-                    subject = "Mathematics",
-                    subjectColor = androidx.compose.ui.graphics.Color(0xFF4285F4),
-                    deadline = LocalDate.now().plusDays(1),
-                    time = "14:30",
-                    priority = TaskPriority.HIGH,
-                    isCompleted = false
-                ),
-                TaskItem(
-                    id = 2,
-                    title = "Read History Chapter 5",
-                    subject = "History",
-                    subjectColor = androidx.compose.ui.graphics.Color(0xFFEA4335),
-                    deadline = LocalDate.now().plusDays(3),
-                    time = "16:00",
-                    priority = TaskPriority.MEDIUM,
-                    isCompleted = false
-                ),
-                TaskItem(
-                    id = 3,
-                    title = "Prepare Physics Lab Report",
-                    subject = "Physics",
-                    subjectColor = androidx.compose.ui.graphics.Color(0xFFFBBC05),
-                    deadline = LocalDate.now().plusDays(2),
-                    time = "10:15",
-                    priority = TaskPriority.HIGH,
-                    isCompleted = false
-                ),
-                TaskItem(
-                    id = 4,
-                    title = "Complete Literature Essay",
-                    subject = "English",
-                    subjectColor = androidx.compose.ui.graphics.Color(0xFF34A853),
-                    deadline = LocalDate.now().minusDays(1),
-                    time = "09:00",
-                    priority = TaskPriority.LOW,
-                    isCompleted = true
-                )
-            )
-        )
-    }
+    // Get tasks from ViewModel
+    val tasks by mainViewModel.tasks.collectAsState()
     
     NavHost(
         navController = navController,
@@ -95,13 +50,7 @@ fun NavigationGraph(
                     navController.navigate("addTask")
                 },
                 onTaskStatusChange = { taskId, completed ->
-                    tasks = tasks.map { task ->
-                        if (task.id == taskId) {
-                            task.copy(isCompleted = completed)
-                        } else {
-                            task
-                        }
-                    }
+                    mainViewModel.updateTaskStatus(taskId, completed)
                 },
                 onStartTimerClick = {
                     navController.navigate(NavigationItem.Timer.route)
@@ -122,16 +71,10 @@ fun NavigationGraph(
                     navController.navigate("addTask")
                 },
                 onTaskStatusChange = { taskId, completed ->
-                    tasks = tasks.map { task ->
-                        if (task.id == taskId) {
-                            task.copy(isCompleted = completed)
-                        } else {
-                            task
-                        }
-                    }
+                    mainViewModel.updateTaskStatus(taskId, completed)
                 },
                 onTaskDelete = { id ->
-                    tasks = tasks.filter { it.id != id }
+                    mainViewModel.deleteTask(id)
                 }
             )
         }
@@ -171,16 +114,11 @@ fun NavigationGraph(
                 onBackClick = { navController.popBackStack() },
                 onEditTask = { /* TODO: Add edit functionality */ },
                 onTaskStatusChange = { id, completed ->
-                    tasks = tasks.map { task ->
-                        if (task.id == id) {
-                            task.copy(isCompleted = completed)
-                        } else {
-                            task
-                        }
-                    }
+                    mainViewModel.updateTaskStatus(id, completed)
                 },
                 onTaskDelete = { id ->
-                    tasks = tasks.filter { it.id != id }
+                    mainViewModel.deleteTask(id)
+                    navController.popBackStack()
                 }
             )
         }
@@ -190,7 +128,8 @@ fun NavigationGraph(
             AddTaskScreen(
                 onBackClick = { navController.popBackStack() },
                 onSaveTask = { newTask ->
-                    tasks = tasks + newTask
+                    mainViewModel.addTask(newTask)
+                    navController.popBackStack()
                 }
             )
         }

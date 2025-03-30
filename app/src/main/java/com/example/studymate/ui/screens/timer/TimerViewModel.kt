@@ -128,20 +128,6 @@ class TimerViewModel : ViewModel() {
                 progress = 1f
             )
             
-            // Record session data if we have valid start and end times
-            startTime?.let { start ->
-                val sessionType = if (isBreakMode) SessionType.BREAK else SessionType.STUDY
-                val durationMinutes = (TimeUnit.MILLISECONDS.toMinutes(_timerState.value.totalTimeMillis)).toInt()
-                
-                // Record study session in database through broadcast receiver
-                val intent = Intent(NotificationReceiver.ACTION_TIMER_FINISHED).apply {
-                    putExtra(NotificationReceiver.EXTRA_SESSION_TYPE, sessionType.ordinal)
-                    putExtra(NotificationReceiver.EXTRA_SUBJECT_ID, selectedSubjectId)
-                    putExtra(NotificationReceiver.EXTRA_START_TIME, start.toString())
-                    putExtra(NotificationReceiver.EXTRA_END_TIME, endTime.toString())
-                }
-            }
-            
             // Auto switch mode after completion
             toggleMode()
         }
@@ -172,20 +158,26 @@ class TimerViewModel : ViewModel() {
                 notificationManager.createNotificationChannel(channel)
             }
             
-            // Record session in database first
+            // Save session data to database
             startTime?.let { start ->
-                val app = context.applicationContext as StudyMateApp
-                val sessionType = if (isBreakMode) SessionType.BREAK else SessionType.STUDY
-                val endTime = LocalDateTime.now()
-                val durationMinutes = (TimeUnit.MILLISECONDS.toMinutes(_timerState.value.totalTimeMillis)).toInt()
-                
-                viewModelScope.launch {
-                    app.studyRepository.recordStudySession(
-                        subjectId = selectedSubjectId,
-                        startTime = start,
-                        endTime = endTime,
-                        sessionType = sessionType
-                    )
+                val app = context.applicationContext as? StudyMateApp
+                if (app != null) {
+                    val sessionType = if (isBreakMode) SessionType.BREAK else SessionType.STUDY
+                    val endTime = LocalDateTime.now()
+                    val durationMinutes = (TimeUnit.MILLISECONDS.toMinutes(_timerState.value.totalTimeMillis)).toInt()
+                    
+                    viewModelScope.launch {
+                        try {
+                            app.studyRepository.recordStudySession(
+                                subjectId = selectedSubjectId,
+                                startTime = start,
+                                endTime = endTime,
+                                sessionType = sessionType
+                            )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
                 }
             }
             

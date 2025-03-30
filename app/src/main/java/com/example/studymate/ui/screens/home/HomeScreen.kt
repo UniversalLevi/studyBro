@@ -104,43 +104,17 @@ fun HomeScreen(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp)
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "StudyMate",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notifications",
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier
-                                .size(28.dp)
-                                .clip(CircleShape)
-                                .clickable { /* Handle notifications */ }
-                        )
-                    }
-                    
-                    // Display current date
-                    val dateFormat = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
-                    val currentDate = dateFormat.format(Date())
-                    
                     Text(
-                        text = currentDate,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
-                        modifier = Modifier.padding(top = 4.dp)
+                        text = "StudyMate",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
                     )
                 }
             }
