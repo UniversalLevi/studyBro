@@ -104,18 +104,31 @@ fun HomeScreen(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.fillMaxWidth()
             ) {
+<<<<<<< HEAD
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
+=======
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+>>>>>>> bb7d525df3ebbaf38d05f09249e4f737aad744da
                 ) {
                     Text(
                         text = "StudyMate",
                         style = MaterialTheme.typography.headlineMedium,
+<<<<<<< HEAD
                         fontWeight = FontWeight.Bold,
                         color = Color.White
+=======
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
+>>>>>>> bb7d525df3ebbaf38d05f09249e4f737aad744da
                     )
                 }
             }

@@ -269,7 +269,7 @@ fun AddTaskScreen(
                         subject = subject.ifEmpty { "General" },
                         subjectColor = subjectColor,
                         deadline = selectedDate,
-                        time = if (selectedDate != null) "${hour}:${minute}" else null,
+                        time = if (selectedDate != null) String.format("%02d:%02d", hour, minute) else null,
                         priority = selectedPriority,
                         isCompleted = false
                     )
@@ -285,11 +285,23 @@ fun AddTaskScreen(
         }
     }
     
+    // Time picker dialog
+    if (showTimePicker) {
+        TimePickerDialog(
+            onDismiss = { showTimePicker = false },
+            onConfirm = { selectedHour, selectedMinute ->
+                hour = selectedHour
+                minute = selectedMinute
+                showTimePicker = false
+            },
+            initialHour = hour,
+            initialMinute = minute
+        )
+    }
+    
     // Date picker dialog
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = selectedDate?.atStartOfDay(ZoneId.systemDefault())?.toInstant()?.toEpochMilli()
-        )
+        val datePickerState = rememberDatePickerState()
         
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -304,11 +316,13 @@ fun AddTaskScreen(
                         showDatePicker = false
                     }
                 ) {
-                    Text("OK")
+                    Text("Confirm")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                TextButton(
+                    onClick = { showDatePicker = false }
+                ) {
                     Text("Cancel")
                 }
             }
@@ -316,6 +330,7 @@ fun AddTaskScreen(
             DatePicker(state = datePickerState)
         }
     }
+<<<<<<< HEAD
 
     // Time Picker Dialog
     if (showTimePicker) {
@@ -330,6 +345,8 @@ fun AddTaskScreen(
             }
         )
     }
+=======
+>>>>>>> bb7d525df3ebbaf38d05f09249e4f737aad744da
 }
 
 @Composable
@@ -434,6 +451,125 @@ fun QuickTimeButton(
         modifier = Modifier.padding(horizontal = 4.dp)
     ) {
         Text(text)
+    }
+}
+
+@Composable
+fun TimePickerDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (Int, Int) -> Unit,
+    initialHour: Int = 12,
+    initialMinute: Int = 0
+) {
+    var hour by remember { mutableStateOf(initialHour) }
+    var minute by remember { mutableStateOf(initialMinute) }
+    
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Select Time",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Time picker with two number pickers side by side
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Hours picker
+                    NumberPicker(
+                        value = hour,
+                        onValueChange = { hour = it },
+                        range = 0..23,
+                        label = "Hour"
+                    )
+                    
+                    Text(
+                        text = ":",
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                    
+                    // Minutes picker
+                    NumberPicker(
+                        value = minute,
+                        onValueChange = { minute = it },
+                        range = 0..59,
+                        label = "Minute"
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Action buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                    
+                    TextButton(
+                        onClick = { onConfirm(hour, minute) }
+                    ) {
+                        Text("Confirm")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NumberPicker(
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    range: IntRange,
+    label: String
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Up button
+        IconButton(onClick = {
+            val newValue = if (value + 1 > range.last) range.first else value + 1
+            onValueChange(newValue)
+        }) {
+            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Increase")
+        }
+        
+        // Value display
+        Text(
+            text = String.format("%02d", value),
+            style = MaterialTheme.typography.headlineMedium
+        )
+        
+        // Down button
+        IconButton(onClick = {
+            val newValue = if (value - 1 < range.first) range.last else value - 1
+            onValueChange(newValue)
+        }) {
+            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Decrease")
+        }
     }
 }
 

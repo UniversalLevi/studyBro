@@ -129,11 +129,14 @@ class TimerViewModel : ViewModel() {
                 progress = 1f
             )
             
+<<<<<<< HEAD
             // Record session data if we have valid start and end times
             startTime?.let { start ->
                 // Session is recorded when notification is shown through showTimerCompleteNotification
             }
             
+=======
+>>>>>>> bb7d525df3ebbaf38d05f09249e4f737aad744da
             // Auto switch mode after completion
             toggleMode()
             
@@ -174,8 +177,9 @@ class TimerViewModel : ViewModel() {
                 notificationManager.createNotificationChannel(channel)
             }
             
-            // Record session in database first
+            // Save session data to database
             startTime?.let { start ->
+<<<<<<< HEAD
                 val app = context.applicationContext as StudyMateApp
                 val sessionType = if (isBreakMode) SessionType.BREAK else SessionType.STUDY
                 val endTime = LocalDateTime.now()
@@ -187,6 +191,26 @@ class TimerViewModel : ViewModel() {
                         endTime = endTime,
                         sessionType = sessionType
                     )
+=======
+                val app = context.applicationContext as? StudyMateApp
+                if (app != null) {
+                    val sessionType = if (isBreakMode) SessionType.BREAK else SessionType.STUDY
+                    val endTime = LocalDateTime.now()
+                    val durationMinutes = (TimeUnit.MILLISECONDS.toMinutes(_timerState.value.totalTimeMillis)).toInt()
+                    
+                    viewModelScope.launch {
+                        try {
+                            app.studyRepository.recordStudySession(
+                                subjectId = selectedSubjectId,
+                                startTime = start,
+                                endTime = endTime,
+                                sessionType = sessionType
+                            )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+>>>>>>> bb7d525df3ebbaf38d05f09249e4f737aad744da
                 }
             }
             
