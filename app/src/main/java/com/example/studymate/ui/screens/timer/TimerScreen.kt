@@ -336,7 +336,7 @@ fun TimerScreen(
             }
         }
         
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(48.dp))
         
         // Controls
         Row(
@@ -389,7 +389,7 @@ fun TimerScreen(
             )
         }
         
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(48.dp))
         
         // Time adjustment slider (only when not running)
         if (!timerState.isRunning) {
@@ -402,25 +402,33 @@ fun TimerScreen(
                 sliderPosition = durationMinutes.toFloat()
             }
             
-            Text(
-                text = "Adjust Time: ${sliderPosition.toInt()} minutes",
-                style = MaterialTheme.typography.titleMedium
-            )
-            
-            Slider(
-                value = sliderPosition,
-                onValueChange = { sliderPosition = it },
-                valueRange = if (isBreakTime) 1f..15f else 1f..60f,
-                steps = if (isBreakTime) 14 else 59,
-                colors = SliderDefaults.colors(
-                    thumbColor = if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary,
-                    activeTrackColor = if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary
-                ),
-                modifier = Modifier.padding(horizontal = 16.dp),
-                onValueChangeFinished = {
-                    viewModel.setDuration(sliderPosition.toInt())
-                }
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Adjust Time: ${sliderPosition.toInt()} minutes",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                Slider(
+                    value = sliderPosition,
+                    onValueChange = { sliderPosition = it },
+                    valueRange = if (isBreakTime) 1f..15f else 1f..60f,
+                    steps = if (isBreakTime) 14 else 59,
+                    colors = SliderDefaults.colors(
+                        thumbColor = if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary,
+                        activeTrackColor = if (isBreakTime) Color(0xFF34A853) else MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    onValueChangeFinished = {
+                        viewModel.setDuration(sliderPosition.toInt())
+                    }
+                )
+            }
         }
     }
 }

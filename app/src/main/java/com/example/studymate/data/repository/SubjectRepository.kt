@@ -3,11 +3,12 @@ package com.example.studymate.data.repository
 import com.example.studymate.data.model.Subject
 import com.example.studymate.data.model.SubjectWithStats
 import com.example.studymate.data.model.TaskStatus
-import com.example.studymate.data.source.local.StudySessionDao
-import com.example.studymate.data.source.local.SubjectDao
-import com.example.studymate.data.source.local.TaskDao
+import com.example.studymate.data.source.local.dao.StudySessionDao
+import com.example.studymate.data.source.local.dao.SubjectDao
+import com.example.studymate.data.source.local.dao.TaskDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 
 /**
  * Repository for handling subject-related data operations
@@ -22,12 +23,30 @@ class SubjectRepository(
     fun getAllSubjects(): Flow<List<Subject>> = subjectDao.getAllSubjects()
     
     // Get a subject by ID
-    suspend fun getSubjectById(subjectId: Long): Subject? = subjectDao.getSubjectById(subjectId)
+    fun getSubjectById(subjectId: Long): Flow<Subject?> = subjectDao.getSubjectById(subjectId)
     
     // Create a new subject
-    suspend fun createSubject(name: String, color: String): Long {
-        val subject = Subject(name = name, color = color)
+    suspend fun createSubject(name: String, color: String? = null): Long {
+        val actualColor = color ?: generateRandomColor()
+        val subject = Subject(name = name, color = actualColor)
         return subjectDao.insertSubject(subject)
+    }
+    
+    // Generate a random color for subjects
+    private fun generateRandomColor(): String {
+        val colors = listOf(
+            "#4285F4", // Blue
+            "#DB4437", // Red
+            "#F4B400", // Yellow
+            "#0F9D58", // Green
+            "#AB47BC", // Purple
+            "#00ACC1", // Cyan
+            "#FF7043", // Deep Orange
+            "#9E9E9E", // Grey
+            "#3949AB", // Indigo
+            "#00897B"  // Teal
+        )
+        return colors.random()
     }
     
     // Update an existing subject
@@ -60,6 +79,13 @@ class SubjectRepository(
         }
     }
     
+    // Get subject names as strings for UI
+    fun getSubjectNames(): Flow<List<String>> {
+        return subjectDao.getAllSubjects().map { subjects ->
+            subjects.map { it.name }
+        }
+    }
+    
     // Private helper to get all subject task statistics
     private fun getAllSubjectTaskStats(): Flow<Map<Long, SubjectStatsData>> {
         return getAllSubjects().combine(getCompletedTaskCounts()) { subjects, completedCounts ->
@@ -68,8 +94,8 @@ class SubjectRepository(
             subjects.forEach { subject ->
                 // Since we can't directly get the Flow value here, we'll default to 0
                 // and update it asynchronously when the Flow collects
-                val completedTasks = taskDao.getTaskCountBySubjectAndStatus(subject.id, TaskStatus.COMPLETED)
-                val pendingTasks = taskDao.getTaskCountBySubjectAndStatus(subject.id, TaskStatus.PENDING)
+                val completedTasks = taskDao.getTaskCountBySubjectAndStatus(subject.id, TaskStatus.COMPLETED.name)
+                val pendingTasks = taskDao.getTaskCountBySubjectAndStatus(subject.id, TaskStatus.PENDING.name)
                 
                 statsMap[subject.id] = SubjectStatsData(
                     studyTime = 0L, // Set a default value
@@ -101,4 +127,7 @@ class SubjectRepository(
         val completedTasks: Int = 0,
         val pendingTasks: Int = 0
     )
+    
+    // Get a subject by name
+    fun getSubjectByName(name: String): Flow<Subject?> = subjectDao.getSubjectByName(name)
 } 

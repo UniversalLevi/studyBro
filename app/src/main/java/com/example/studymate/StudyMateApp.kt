@@ -7,21 +7,43 @@ import android.content.Context
 import android.os.Build
 import androidx.work.Configuration
 import androidx.work.WorkManager
-import com.example.studymate.data.repository.StudyRepository
+import com.example.studymate.data.repository.SubjectRepository
 import com.example.studymate.data.repository.TaskRepository
-import com.example.studymate.data.source.local.StudyMateDatabase
+import com.example.studymate.data.repository.StudyRepository
+import com.example.studymate.data.source.local.AppDatabase
 
 class StudyMateApp : Application(), Configuration.Provider {
     
     // Database instance
-    val database by lazy { StudyMateDatabase.getDatabase(this) }
+    val database by lazy { AppDatabase.getDatabase(this) }
     
     // Repositories
-    val taskRepository by lazy { TaskRepository(database.taskDao(), database.subjectDao()) }
-    val studyRepository by lazy { StudyRepository(database.studySessionDao(), database.subjectDao()) }
+    val taskRepository by lazy { 
+        TaskRepository(database.taskDao())
+    }
+    
+    val subjectRepository by lazy { 
+        SubjectRepository(
+            database.subjectDao(),
+            database.taskDao(),
+            database.studySessionDao()
+        ) 
+    }
+    
+    val studyRepository by lazy {
+        StudyRepository(
+            database.studySessionDao(),
+            database.subjectDao()
+        )
+    }
     
     override fun onCreate() {
         super.onCreate()
+        // Initialize WorkManager
+        WorkManager.initialize(
+            this,
+            workManagerConfiguration
+        )
         createNotificationChannels()
     }
     
@@ -50,11 +72,10 @@ class StudyMateApp : Application(), Configuration.Provider {
         }
     }
     
-    override fun getWorkManagerConfiguration(): Configuration {
-        return Configuration.Builder()
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
             .setMinimumLoggingLevel(android.util.Log.INFO)
             .build()
-    }
     
     companion object {
         const val TIMER_CHANNEL_ID = "study_timer_channel"

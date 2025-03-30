@@ -28,56 +28,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.studymate.ui.navigation.NavigationGraph
 import com.example.studymate.ui.navigation.NavigationItem
-import com.example.studymate.ui.navigation.Screen
-import com.example.studymate.ui.screens.home.HomeScreen
-import com.example.studymate.ui.screens.settings.SettingsScreen
-import com.example.studymate.ui.screens.stats.StatisticsScreen
-import com.example.studymate.ui.screens.tasks.TaskItem
-import com.example.studymate.ui.screens.timer.TimerScreen
 import com.example.studymate.ui.theme.StudyMateTheme
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import com.example.studymate.data.model.StudySession
-
-class MainViewModel : ViewModel() {
-    private val _subjects = MutableStateFlow(
-        listOf("Mathematics", "History", "Physics", "Economics", "English")
-    )
-    val subjects: StateFlow<List<String>> = _subjects.asStateFlow()
-    
-    private val _studySessions = MutableStateFlow<List<StudySession>>(emptyList())
-    val studySessions: StateFlow<List<StudySession>> = _studySessions.asStateFlow()
-    
-    private val _tasks = MutableStateFlow<List<TaskItem>>(emptyList())
-    val tasks: StateFlow<List<TaskItem>> = _tasks.asStateFlow()
-    
-    fun addSubject(subject: String) {
-        if (subject.isNotBlank() && !_subjects.value.contains(subject)) {
-            _subjects.value = _subjects.value + subject
-        }
-    }
-    
-    fun removeSubject(subject: String) {
-        _subjects.value = _subjects.value.filter { it != subject }
-    }
-    
-    fun resetStats() {
-        _studySessions.value = emptyList()
-        _tasks.value = _tasks.value.map { it.copy(isCompleted = false) }
-    }
-}
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()

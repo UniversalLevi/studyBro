@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,10 +27,13 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -40,8 +45,11 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -58,6 +66,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import java.time.Instant
@@ -167,12 +176,28 @@ fun AddTaskScreen(
                     onValueChange = { },
                     label = { Text("Time (Optional)") },
                     placeholder = { Text("Select time") },
-                    modifier = Modifier.fillMaxWidth().clickable { showTimePicker = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showTimePicker = true },
                     readOnly = true,
                     singleLine = true,
                     shape = RoundedCornerShape(8.dp),
                     leadingIcon = {
                         Icon(Icons.Default.Timer, contentDescription = "Time")
+                    },
+                    trailingIcon = {
+                        if (hour != 0 || minute != 0) {
+                            IconButton(onClick = { 
+                                hour = 0
+                                minute = 0
+                            }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear Time")
+                            }
+                        } else {
+                            IconButton(onClick = { showTimePicker = true }) {
+                                Icon(Icons.Default.Schedule, contentDescription = "Select Time")
+                            }
+                        }
                     }
                 )
             }
@@ -291,31 +316,31 @@ fun AddTaskScreen(
             DatePicker(state = datePickerState)
         }
     }
-    
-    // Time picker dialog
+
+    // Time Picker Dialog
     if (showTimePicker) {
-        CustomTimePickerDialog(
+        TimePickerDialog(
+            initialHour = hour,
+            initialMinute = minute,
             onDismissRequest = { showTimePicker = false },
-            onConfirm = { selectedHour, selectedMinute ->
+            onTimeSelected = { selectedHour, selectedMinute ->
                 hour = selectedHour
                 minute = selectedMinute
                 showTimePicker = false
-            },
-            initialHour = hour,
-            initialMinute = minute
+            }
         )
     }
 }
 
 @Composable
-fun CustomTimePickerDialog(
-    onDismissRequest: () -> Unit,
-    onConfirm: (Int, Int) -> Unit,
+fun TimePickerDialog(
     initialHour: Int,
-    initialMinute: Int
+    initialMinute: Int,
+    onDismissRequest: () -> Unit,
+    onTimeSelected: (hour: Int, minute: Int) -> Unit
 ) {
-    var hour by remember { mutableStateOf(initialHour) }
-    var minute by remember { mutableStateOf(initialMinute) }
+    var selectedHour by remember { mutableStateOf(initialHour) }
+    var selectedMinute by remember { mutableStateOf(initialMinute) }
     
     Dialog(onDismissRequest = onDismissRequest) {
         Surface(
@@ -323,54 +348,72 @@ fun CustomTimePickerDialog(
             color = MaterialTheme.colorScheme.surface
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "Select Time",
                     style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    fontWeight = FontWeight.Bold
                 )
                 
+                Spacer(modifier = Modifier.height(20.dp))
+                
+                // Display selected time
+                Text(
+                    text = String.format("%02d:%02d", selectedHour, selectedMinute),
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                Spacer(modifier = Modifier.height(20.dp))
+                
+                // Hour slider
+                Text(
+                    text = "Hour: $selectedHour",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                
+                Slider(
+                    value = selectedHour.toFloat(),
+                    onValueChange = { selectedHour = it.toInt() },
+                    valueRange = 0f..23f,
+                    steps = 23,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Minute slider (in 5-minute increments)
+                Text(
+                    text = "Minute: $selectedMinute",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                
+                Slider(
+                    value = selectedMinute.toFloat() / 5,
+                    onValueChange = { selectedMinute = (it.toInt() * 5) },
+                    valueRange = 0f..11f,
+                    steps = 11,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(20.dp))
+                
+                // Action buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Hour spinner
-                    NumberPicker(
-                        value = hour,
-                        onValueChange = { hour = it },
-                        range = 0..23
-                    )
-                    
-                    Text(
-                        text = ":",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-                    
-                    // Minute spinner
-                    NumberPicker(
-                        value = minute,
-                        onValueChange = { minute = it },
-                        range = 0..59
-                    )
-                }
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismissRequest) {
                         Text("Cancel")
                     }
                     
-                    TextButton(
-                        onClick = { onConfirm(hour, minute) }
-                    ) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    Button(onClick = { onTimeSelected(selectedHour, selectedMinute) }) {
                         Text("OK")
                     }
                 }
@@ -380,34 +423,17 @@ fun CustomTimePickerDialog(
 }
 
 @Composable
-fun NumberPicker(
-    value: Int,
-    onValueChange: (Int) -> Unit,
-    range: IntRange
+fun QuickTimeButton(
+    text: String,
+    hour: Int,
+    minute: Int,
+    onClick: (Int, Int) -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+    OutlinedButton(
+        onClick = { onClick(hour, minute) },
+        modifier = Modifier.padding(horizontal = 4.dp)
     ) {
-        IconButton(
-            onClick = { 
-                if (value < range.last) onValueChange(value + 1) 
-            }
-        ) {
-            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Increase")
-        }
-        
-        Text(
-            text = String.format("%02d", value),
-            style = MaterialTheme.typography.headlineMedium
-        )
-        
-        IconButton(
-            onClick = { 
-                if (value > range.first) onValueChange(value - 1) 
-            }
-        ) {
-            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Decrease")
-        }
+        Text(text)
     }
 }
 

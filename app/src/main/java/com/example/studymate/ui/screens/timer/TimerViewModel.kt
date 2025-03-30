@@ -11,6 +11,7 @@ import android.media.RingtoneManager
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.ViewModel
@@ -130,20 +131,21 @@ class TimerViewModel : ViewModel() {
             
             // Record session data if we have valid start and end times
             startTime?.let { start ->
-                val sessionType = if (isBreakMode) SessionType.BREAK else SessionType.STUDY
-                val durationMinutes = (TimeUnit.MILLISECONDS.toMinutes(_timerState.value.totalTimeMillis)).toInt()
-                
-                // Record study session in database through broadcast receiver
-                val intent = Intent(NotificationReceiver.ACTION_TIMER_FINISHED).apply {
-                    putExtra(NotificationReceiver.EXTRA_SESSION_TYPE, sessionType.ordinal)
-                    putExtra(NotificationReceiver.EXTRA_SUBJECT_ID, selectedSubjectId)
-                    putExtra(NotificationReceiver.EXTRA_START_TIME, start.toString())
-                    putExtra(NotificationReceiver.EXTRA_END_TIME, endTime.toString())
-                }
+                // Session is recorded when notification is shown through showTimerCompleteNotification
             }
             
             // Auto switch mode after completion
             toggleMode()
+            
+            // Delay a bit to allow UI to update
+            delay(1000)
+            
+            // Reset timer for the new mode
+            _timerState.value = _timerState.value.copy(
+                remainingTimeMillis = _timerState.value.totalTimeMillis,
+                progress = 0f,
+                isCompleted = false
+            )
         }
     }
     
@@ -177,7 +179,6 @@ class TimerViewModel : ViewModel() {
                 val app = context.applicationContext as StudyMateApp
                 val sessionType = if (isBreakMode) SessionType.BREAK else SessionType.STUDY
                 val endTime = LocalDateTime.now()
-                val durationMinutes = (TimeUnit.MILLISECONDS.toMinutes(_timerState.value.totalTimeMillis)).toInt()
                 
                 viewModelScope.launch {
                     app.studyRepository.recordStudySession(
@@ -213,12 +214,19 @@ class TimerViewModel : ViewModel() {
             }
             
             // Vibrate device
-            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                val vibrator = vibratorManager.defaultVibrator
                 vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
             } else {
                 @Suppress("DEPRECATION")
-                vibrator.vibrate(500)
+                val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(500)
+                }
             }
         } catch (e: Exception) {
             // Log the error but don't crash

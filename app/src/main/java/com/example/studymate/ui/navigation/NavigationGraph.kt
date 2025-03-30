@@ -33,52 +33,9 @@ fun NavigationGraph(
     // Get subjects from the ViewModel
     val subjects by mainViewModel.subjects.collectAsState()
     
-    // Sample tasks data
+    // Initialize with empty tasks list instead of sample data
     var tasks by remember { 
-        mutableStateOf(
-            listOf(
-                TaskItem(
-                    id = 1,
-                    title = "Complete Math Assignment",
-                    subject = "Mathematics",
-                    subjectColor = androidx.compose.ui.graphics.Color(0xFF4285F4),
-                    deadline = LocalDate.now().plusDays(1),
-                    time = "14:30",
-                    priority = TaskPriority.HIGH,
-                    isCompleted = false
-                ),
-                TaskItem(
-                    id = 2,
-                    title = "Read History Chapter 5",
-                    subject = "History",
-                    subjectColor = androidx.compose.ui.graphics.Color(0xFFEA4335),
-                    deadline = LocalDate.now().plusDays(3),
-                    time = "16:00",
-                    priority = TaskPriority.MEDIUM,
-                    isCompleted = false
-                ),
-                TaskItem(
-                    id = 3,
-                    title = "Prepare Physics Lab Report",
-                    subject = "Physics",
-                    subjectColor = androidx.compose.ui.graphics.Color(0xFFFBBC05),
-                    deadline = LocalDate.now().plusDays(2),
-                    time = "10:15",
-                    priority = TaskPriority.HIGH,
-                    isCompleted = false
-                ),
-                TaskItem(
-                    id = 4,
-                    title = "Complete Literature Essay",
-                    subject = "English",
-                    subjectColor = androidx.compose.ui.graphics.Color(0xFF34A853),
-                    deadline = LocalDate.now().minusDays(1),
-                    time = "09:00",
-                    priority = TaskPriority.LOW,
-                    isCompleted = true
-                )
-            )
-        )
+        mutableStateOf<List<TaskItem>>(emptyList())
     }
     
     NavHost(

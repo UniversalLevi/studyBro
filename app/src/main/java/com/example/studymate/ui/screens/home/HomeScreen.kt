@@ -72,7 +72,7 @@ fun HomeScreen(
     onAddTaskClick: () -> Unit,
     onTaskStatusChange: (Long, Boolean) -> Unit,
     onStartTimerClick: () -> Unit,
-    subjects: List<String> = listOf("Mathematics", "History", "Physics", "Economics", "English"),
+    subjects: List<String> = emptyList(),
     onAddSubject: (String) -> Unit = {},
     onRemoveSubject: (String) -> Unit = {}
 ) {
@@ -104,43 +104,18 @@ fun HomeScreen(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp)
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "StudyMate",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notifications",
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier
-                                .size(28.dp)
-                                .clip(CircleShape)
-                                .clickable { /* Handle notifications */ }
-                        )
-                    }
-                    
-                    // Display current date
-                    val dateFormat = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
-                    val currentDate = dateFormat.format(Date())
-                    
                     Text(
-                        text = currentDate,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
-                        modifier = Modifier.padding(top = 4.dp)
+                        text = "StudyMate",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
             }
